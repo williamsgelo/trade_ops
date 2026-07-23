@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TradeOps
 
-## Getting Started
+TradeOps is a Next.js App Router application for field-service operations. It
+uses PostgreSQL through Prisma ORM.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js and npm
+- A PostgreSQL database
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+## Database setup
+
+Create a `.env` file with the configured PostgreSQL connection string:
+
+```dotenv
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+```
+
+The Prisma datasource is configured in `prisma.config.ts`. The schema lives at
+`prisma/schema.prisma`, and the generated client is written to
+`lib/generated/prisma`.
+
+The customer screen is temporarily scoped to the development organisation
+created by the seed. Override its predictable ID when needed by setting the same
+environment variable for the application and seed command:
+
+```dotenv
+TRADEOPS_DEVELOPMENT_ORGANIZATION_ID="tradeops-development"
+```
+
+Authentication will replace this development scope with the signed-in user's
+organisation in a later sprint.
+
+## Migrations
+
+Create and apply a development migration after a schema change:
+
+```bash
+npx prisma migrate dev --name describe_change
+```
+
+Apply committed migrations in production or CI:
+
+```bash
+npx prisma migrate deploy
+```
+
+Check migration status:
+
+```bash
+npx prisma migrate status
+```
+
+## Prisma Client
+
+Regenerate Prisma Client after changing the schema:
+
+```bash
+npx prisma generate
+```
+
+The application imports the reusable, hot-reload-safe client from `lib/db.ts`.
+
+## Development seed
+
+Seed one development organisation, one owner, and three customers:
+
+```bash
+npm run db:seed
+```
+
+The seed uses fixed identifiers and upserts, so it can be run repeatedly without
+creating duplicate seed records.
+
+## Prisma Studio
+
+Inspect and edit database records locally:
+
+```bash
+npx prisma studio
+```
+
+## Run the application
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000/customers](http://localhost:3000/customers).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quality checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx prisma validate
+npx tsc --noEmit
+npm run lint
+npm run build
+```

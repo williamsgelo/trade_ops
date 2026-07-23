@@ -1,34 +1,49 @@
-// app/(dashboard)/customers/page.tsx
-
-import { Plus, Search } from "lucide-react";
+import { connection } from "next/server";
+import {
+  AlertCircle,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Users,
+} from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { prisma } from "@/lib/db";
+import { DEVELOPMENT_ORGANIZATION_ID } from "@/lib/development";
 
-const customers = [
-  {
-    name: "Williams Residence",
-    contact: "Angelo Williams",
-    phone: "082 123 4567",
-    jobs: 4,
-  },
-  {
-    name: "Greenview Estate",
-    contact: "Sarah Jacobs",
-    phone: "083 555 0198",
-    jobs: 12,
-  },
-  {
-    name: "Corner Café",
-    contact: "Michael Naidoo",
-    phone: "071 401 8864",
-    jobs: 2,
-  },
-];
+async function loadCustomers() {
+  await connection();
 
-export default function CustomersPage() {
+  try {
+    const customers = await prisma.customer.findMany({
+      where: {
+        organizationId: DEVELOPMENT_ORGANIZATION_ID,
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        address: true,
+        isActive: true,
+      },
+    });
+
+    return { customers, failed: false as const };
+  } catch (error) {
+    console.error("Unable to load customers from the database.", error);
+    return { customers: [], failed: true as const };
+  }
+}
+
+export default async function CustomersPage() {
+  const result = await loadCustomers();
+
   return (
     <>
       <PageHeader
@@ -42,28 +57,80 @@ export default function CustomersPage() {
         }
       />
 
-      <div className="relative mb-5 max-w-md">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search customers..." className="pl-9" />
-      </div>
+      {result.failed ? (
+        <Card>
+          <CardContent className="flex min-h-52 flex-col items-center justify-center p-6 text-center">
+            <AlertCircle className="size-9 text-destructive" />
+            <h2 className="mt-4 font-semibold">Customers are unavailable</h2>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              We could not load customer records. Check the database connection
+              and try again.
+            </p>
+          </CardContent>
+        </Card>
+      ) : result.customers.length === 0 ? (
+        <Card>
+          <CardContent className="flex min-h-52 flex-col items-center justify-center p-6 text-center">
+            <Users className="size-9 text-muted-foreground" />
+            <h2 className="mt-4 font-semibold">No customers yet</h2>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              Customer records will appear here after they are added.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {result.customers.map((customer) => (
+            <Card key={customer.id}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="font-semibold leading-5">{customer.name}</p>
+                  <Badge
+                    variant={customer.isActive ? "secondary" : "outline"}
+                    className={
+                      customer.isActive
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                        : undefined
+                    }
+                  >
+                    {customer.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {customers.map((customer) => (
-          <Card key={customer.name}>
-            <CardContent className="p-5">
-              <p className="font-semibold">{customer.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {customer.contact}
-              </p>
-              <p className="text-sm text-muted-foreground">{customer.phone}</p>
-
-              <div className="mt-5 border-t pt-4 text-sm">
-                {customer.jobs} previous jobs
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <dl className="mt-5 space-y-3 text-sm">
+                  <div className="flex gap-3">
+                    <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <dt className="sr-only">Phone</dt>
+                      <dd className="break-words">
+                        {customer.phone ?? "Not provided"}
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <dt className="sr-only">Email</dt>
+                      <dd className="break-words">
+                        {customer.email ?? "Not provided"}
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <dt className="sr-only">Address</dt>
+                      <dd className="break-words text-muted-foreground">
+                        {customer.address ?? "Not provided"}
+                      </dd>
+                    </div>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </>
   );
 }

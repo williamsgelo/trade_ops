@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   BriefcaseBusiness,
   LayoutDashboard,
@@ -11,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { SignOutButton } from "@/components/layout/sign-out-button";
+import { auth } from "@/auth";
 
 const mobileNavigation = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
@@ -20,23 +23,54 @@ const mobileNavigation = [
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+function getInitials(name: string | null | undefined, email: string | null | undefined) {
+  const source = name?.trim() || email?.trim() || "User";
+  const parts = source.split(/\s+/).filter(Boolean);
+
+  return (parts.length > 1
+    ? `${parts[0][0]}${parts[parts.length - 1][0]}`
+    : source.slice(0, 2)
+  ).toUpperCase();
+}
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const displayName = session.user.name ?? session.user.email ?? "TradeOps user";
+  const initials = getInitials(session.user.name, session.user.email);
+
   return (
     <div className="min-h-screen bg-muted/20">
       <div className="flex">
-        <DashboardSidebar />
+        <DashboardSidebar user={session.user} />
 
         <div className="min-w-0 flex-1">
           <header className="flex h-16 items-center justify-between border-b bg-background px-4 sm:px-6">
             <div>
-              <p className="text-sm font-medium">Acme Security</p>
+              <p className="text-sm font-medium">{displayName}</p>
               <p className="text-xs text-muted-foreground">
-                Johannesburg, South Africa
+                {session.user.email}
               </p>
             </div>
 
-            <div className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-              AW
+            <div className="flex items-center gap-2">
+              <div
+                className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+                aria-label={`${displayName} profile`}
+              >
+                {initials}
+              </div>
+              <div className="lg:hidden">
+                <SignOutButton compact />
+              </div>
             </div>
           </header>
 

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/layout/sign-out-button";
 
 const navigation = [
   {
@@ -40,7 +41,16 @@ const navigation = [
   },
 ];
 
-export function DashboardSidebar() {
+type DashboardSidebarProps = {
+  user: {
+    name?: string | null;
+    email?: string | null;
+  };
+};
+
+export function DashboardSidebar({ user }: DashboardSidebarProps) {
+  const displayName = user.name ?? user.email ?? "TradeOps user";
+
   return (
     <aside className="hidden w-64 shrink-0 border-r bg-background lg:block">
       <div className="sticky top-0 flex h-screen flex-col">
@@ -72,9 +82,12 @@ export function DashboardSidebar() {
 
         <div className="border-t p-4">
           <div className="rounded-lg bg-muted p-3">
-            <p className="text-sm font-medium">Acme Security</p>
-            <p className="text-xs text-muted-foreground">Administrator</p>
+            <p className="truncate text-sm font-medium">{displayName}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user.email}
+            </p>
           </div>
+          <SignOutButton />
         </div>
       </div>
     </aside>

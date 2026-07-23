@@ -1,4 +1,6 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
 import { AuthForm } from "@/components/layout/auth-form"
 import {
   Card,
@@ -9,7 +11,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await auth()
+
+  if (session?.user) {
+    redirect("/dashboard")
+  }
+
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>

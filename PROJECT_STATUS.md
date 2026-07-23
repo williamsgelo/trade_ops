@@ -1,6 +1,28 @@
 # TradeOps Project Status
 
-Last updated: 2026-07-22
+Last updated: 2026-07-23
+
+## Sprint 2: Auth.js authentication
+
+Status: Complete
+
+- Auth.js is configured in the root `auth.ts` with the Prisma adapter.
+- Credentials authentication uses the existing `User.passwordHash` field.
+- Registration and login inputs are validated with Zod.
+- Passwords are hashed with bcrypt before storage and are never returned to the
+  client.
+- Login and registration failures use generic, sanitized messages.
+- The App Router Auth.js handler is available at
+  `app/api/auth/[...nextauth]/route.ts`.
+- `/login` and `/register` use Server Actions for authentication mutations.
+- All routes in `app/(dashboard)` are protected by the dashboard server layout
+  and redirect unauthenticated users to `/login`.
+- Dashboard Server Components can access the current user through `auth()`.
+- The dashboard shell shows the authenticated user's name and email and
+  provides server-side sign-out.
+- Customer reads now resolve `organizationId` from the authenticated session;
+  users without an organisation see an empty state.
+- Required environment variables are documented in `.env.example`.
 
 ## Sprint 1: PostgreSQL customer data
 
@@ -20,23 +42,26 @@ Status: Complete
 
 ## Current limitations
 
-- Authentication and authorization are not implemented.
-- The customer page uses `TRADEOPS_DEVELOPMENT_ORGANIZATION_ID`, defaulting to
-  `tradeops-development`, until the organisation can be resolved from a server
-  session.
+- Organisation onboarding is not implemented. New registrations have no
+  organisation and therefore see no organisation-owned customer records.
+- Password reset, email verification, and login rate limiting are not yet
+  implemented.
 - The existing Add customer control is visual only; customer mutations are not
   part of Sprint 1.
 
 ## Verification
 
-- Development seed completed successfully on two consecutive runs.
 - `npx prisma validate` passed.
+- `npx prisma generate` passed.
 - `npx tsc --noEmit` passed.
 - `npm run lint` passed.
-- Production build is pending; it will be run separately by the project owner.
+- `git diff --check` passed.
+- Production build remains pending for the project owner. The sandboxed attempt
+  reached compilation but could not fetch the existing Geist Google Fonts.
 
 ## Next sprint considerations
 
-- Implement Auth.js and resolve the active organisation from the server session.
-- Replace the development organisation identifier in persistent data queries.
-- Add customer creation and editing through Server Actions with authorization.
+- Implement organisation onboarding and refresh session claims after membership
+  changes.
+- Add customer creation and editing through Server Actions with role checks.
+- Add password reset, email verification, and login rate limiting.

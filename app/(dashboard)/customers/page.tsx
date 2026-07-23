@@ -13,15 +13,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { prisma } from "@/lib/db";
-import { DEVELOPMENT_ORGANIZATION_ID } from "@/lib/development";
+import { auth } from "@/auth";
 
-async function loadCustomers() {
+async function loadCustomers(organizationId: string | null) {
   await connection();
+
+  if (!organizationId) {
+    return { customers: [], failed: false as const };
+  }
 
   try {
     const customers = await prisma.customer.findMany({
       where: {
-        organizationId: DEVELOPMENT_ORGANIZATION_ID,
+        organizationId,
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: {
@@ -42,7 +46,8 @@ async function loadCustomers() {
 }
 
 export default async function CustomersPage() {
-  const result = await loadCustomers();
+  const session = await auth();
+  const result = await loadCustomers(session?.user.organizationId ?? null);
 
   return (
     <>
